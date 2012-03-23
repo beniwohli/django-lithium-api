@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from optparse import make_option
+from fnmatch import fnmatch
 
 from lxml import etree
 from django.core.management import BaseCommand, CommandError
@@ -35,5 +36,14 @@ Style:\t%s
             """ % (board.title.encode('utf-8'), board.id, board.href, board.interaction_style)
 
     def handle_messages(self, *args, **options):
-        for message in self.api('messages_linear', board_id=args[1]):
-            api_signals.message_create.send(self, message=message, token=None, raw_xml=etree.tostring(message._tree))
+        board_id = args[1]
+        if '*' in board_id or '?' in board_id:
+            boards = [board.id for board in self.api('boards_nested') if fnmatch(board.id, board_id)]
+        else:
+            boards = [board_id]
+        for board in boards:
+            for message in self.api('messages_linear', board_id=board):
+                api_signals.message_create.send(self, message=message, token=None, raw_xml=etree.tostring(message._tree))
+
+    def _handle_unknown_command(self, *args, **options):
+        raise CommandError('subcommand "%s" not known' % args [0])
