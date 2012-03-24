@@ -36,20 +36,16 @@ API_PATHS = {
 }
 
 
-
 class LithiumApi(object):
-    def __init__(self, entry_point=None):
+    def __init__(self, entry_point=None, debug=None):
         self.entry_point = entry_point or lithium_settings.get('ENTRY_POINT')
         self.session_key = ''
         if lithium_settings.get('HTTP_USER'):
             auth = (lithium_settings.get('HTTP_USER'), lithium_settings.get('HTTP_PASSWORD'))
         else:
             auth = ()
-        if lithium_settings.get('DEBUG'):
-            config =  {'verbose': sys.stderr}
-        else:
-            config = {}
-        self.session = requests.session(auth=auth, config=config)
+        self.session = requests.session(auth=auth, config={})
+        self.set_debug(lithium_settings.get('DEBUG') if debug is None else debug)
 
     def authenticate(self, username, password):
         self.session_key = self('auth_login', {'user.login': username, 'user.password': password})
@@ -91,8 +87,8 @@ class LithiumApi(object):
         return self.handle_response(response.content)
 
     def handle_response(self, response):
-        if lithium_settings.get('DEBUG'):
-            print response
+        if self._debug:
+            sys.stderr.write(response)
         if response:
             tree = etree.fromstring(response)
             if tree.get('status') == 'success':
@@ -103,5 +99,16 @@ class LithiumApi(object):
                 return types.xml_to_type(elem, self)
             else:
                 raise exceptions.RemoteException(response)
+
+    def set_debug(self, debug):
+        """
+        Changes the ``debug`` mode of the API. When set to ``True``, HTTP
+        requests and XML responses are printed to STDERR
+        """
+        self._debug = debug
+        if debug:
+            self.session.config['verbose'] = sys.stderr
+        else:
+            self.session.config['verbose'] = None
 
 api = LithiumApi()
