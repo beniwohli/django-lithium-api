@@ -1,27 +1,16 @@
 # -*- coding: utf-8 -*-
 from optparse import make_option
-from django.core.management import BaseCommand, CommandError
-from django_lithium_api.api import api as lithium_api
-from django_lithium_api.management.commands._utils import authenticated
+from django.core.management import CommandError
+from django_lithium_api.management.commands._utils import authenticated, LithiumBaseCommand
 
 
-
-class Command(BaseCommand):
+class Command(LithiumBaseCommand):
     help = "Handle Lithium event subscriptions"
 
-    option_list = BaseCommand.option_list + (
-        make_option('--user', dest='user', type='string', default='',
-            help='The user to use for the connection'),
-        make_option('--password', dest='password', type='string', default='',
-            help='The password to use for the connection'),
+    option_list = LithiumBaseCommand.option_list + (
         make_option('--callback', dest='callback', type='string', default='',
             help='The callback URL for the event subscription'),
     )
-
-    api = lithium_api
-
-    def handle(self, *args, **options):
-        getattr(self, 'handle_%s' % args[0], self._handle_unknown_command)(*args, **options)
 
     @authenticated
     def handle_list_subscriptions(self, *args, **options):
@@ -30,7 +19,6 @@ class Command(BaseCommand):
             print unicode(subscription)
             print
 
-    @authenticated
     def handle_types(self, *args, **options):
         for event in self.api('events_types'):
             print event
@@ -57,6 +45,3 @@ class Command(BaseCommand):
         else:
             for arg in args[1:]:
                 print self.api('events_unsubscribe', subscription_token=arg)
-
-    def _handle_unknown_command(self, *args, **options):
-        raise CommandError('subcommand "%s" not known' % args [0])
