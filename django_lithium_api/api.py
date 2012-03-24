@@ -58,15 +58,11 @@ class LithiumApi(object):
     def __call__(self, method, data=None, **kwargs):
         if data is None:
             data = {}
-        if self.session_key:
-            data['restapi.session_key'] = self.session_key
         if method in API_PATHS['GET']:
-            handler = self.session.get
-            request_kwargs = {'params': data}
+            http_method = 'get'
             path = API_PATHS['GET'][method]
         elif method in API_PATHS['POST']:
-            handler = self.session.post
-            request_kwargs = {'data': data}
+            http_method = 'post'
             path = API_PATHS['POST'][method]
         else:
             raise exceptions.MethodNotSupported(method)
@@ -74,16 +70,21 @@ class LithiumApi(object):
             path = path % kwargs
         except KeyError as e:
             raise exceptions.ArgumentsMissing(e.message)
-        url = self.entry_point + path
-        response = handler(url, **request_kwargs)
-        return self.handle_response(response.content)
+        return self.raw(path, http_method, **data)
 
-    def get_obj_from_url(self, url):
-        params = {}
+    def raw(self, path, http_method='get', **data):
+        if path[0] == '/':
+            path = path[1:]
+        url = self.entry_point + path
         if self.session_key:
-            params['restapi.session_key'] = self.session_key
-        url = self.entry_point[:-1] + url
-        response = self.session.get(url, params=params)
+            data['restapi.session_key'] = self.session_key
+        if http_method.lower() == 'post':
+            handler = self.session.post
+            request_kwargs = {'data': data}
+        else:
+            handler = self.session.get
+            request_kwargs = {'params': data}
+        response = handler(url, **request_kwargs)
         return self.handle_response(response.content)
 
     def handle_response(self, response):

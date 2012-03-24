@@ -20,7 +20,7 @@ class LithiumType(object):
 
     def __getattr__(self, item):
         if self._api and self.href and not self._populated:
-            obj = self._api.get_obj_from_url(self.href)
+            obj = self._api.raw(self.href)
             self.__dict__.update(obj.__dict__)
         self._populated = True
         if item in self.__dict__:
