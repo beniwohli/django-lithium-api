@@ -28,10 +28,8 @@ class LithiumType(object):
         else:
             raise AttributeError(item)
 
-
-
     def __repr__(self):
-        return pprint.pformat(self.__dict__)
+        return '<%s>: %s' % (self.__class__.__name__, pprint.pformat({k:v for k, v in self.__dict__.iteritems() if not k.startswith('_')}))
 
 
 class Board(LithiumType):
