@@ -6,7 +6,7 @@ from lxml import etree
 from django.core.management import BaseCommand, CommandError
 from django_lithium_api.api import api as lithium_api
 from django_lithium_api import signals as api_signals
-from django_lithium_api.management.commands.utils import authenticated
+from django_lithium_api.management.commands._utils import authenticated
 
 
 
