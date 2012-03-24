@@ -101,22 +101,28 @@ def xml_to_type(xml_tree, api=None):
     if xml_tree.attrib.get('null') == 'true':
         return None
     if lithium_type in types_map:
+        # this is a complex type
         lithium_type = types_map.get(xml_tree.get('type'))
         return lithium_type(xml_tree, api)
     elif lithium_type is None:
+        # this is a list or dictionary
         children = xml_tree.getchildren()
         if not children:
+            # empty, can't say if list or dictionary
             return []
         if 'name' in children[0].attrib:
+            # it's a dictionary
             result = {}
             for child in xml_tree.getchildren():
                 result[child.get('name')] = xml_to_type(child, api)
         else:
+            # it's a list
             result = []
             for child in xml_tree.getchildren():
                 result.append(xml_to_type(child, api))
         return result
     else:
+        # gotta be a primitive type, then!
         return primitive_type(xml_tree)
 
 types_map = {
@@ -124,6 +130,7 @@ types_map = {
     'board': Board,
     'blog': Blog,
     'user': User,
+    'thread': Thread,
     'message': Message,
     'message_status': MessageStatus,
     'label': Label,
