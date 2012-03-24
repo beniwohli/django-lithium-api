@@ -1,0 +1,6 @@
+*.pyc
+*.pyo
+.project
+.idea
+django_lithium_api.egg-info
+dist
