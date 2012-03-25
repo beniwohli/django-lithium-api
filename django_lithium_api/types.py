@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import pprint
 
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 from dateutil.parser import  parse as parse_datetime
 from lxml import etree
@@ -15,10 +15,15 @@ class LithiumType(object):
         self._populated = False
         self._api = api
 
-        for child in xml_tree.getchildren():
-            setattr(self, child.tag, xml_to_type(child, api))
+        for child in xml_tree:
+            if hasattr(self, '_handle_%s' % child.tag):
+                getattr(self, '_handle_%s' % child.tag)(child)
+            else:
+                setattr(self, child.tag, xml_to_type(child, api))
 
     def __getattr__(self, item):
+        if item.startswith('_'):
+            raise AttributeError(item)
         if self._api and self.href and not self._populated:
             obj = self._api.raw(self.href)
             self.__dict__.update(obj.__dict__)
@@ -61,7 +66,39 @@ class Label(LithiumType):
 
 
 class Thread(LithiumType):
-    pass
+    def _handle_messages(self, child):
+        """
+        ``<messages>`` has a somewhat nonstandard structure::
+
+            <messages>
+                <topic type="message" href="/messages/id/123" /> <!-- first message in thread -->
+                <read> <!-- read count (?) -->
+                    <count type="int">5</count>
+                </read>
+                <linear> <!-- list of messages -->
+                    <!-- note: first message is equal to topic -->
+                    <message type="message" href="/messages/id/123" />
+                    <message type="message" href="/messages/id/124" />
+                    <message type="message" href="/messages/id/125" />
+                </linear>
+            </messages>
+        """
+
+        messages = OrderedDict()
+        for elem in child:
+            if elem.tag == 'topic':
+                self.topic = xml_to_type(elem, self._api)
+                messages[self.topic.href] = self.topic
+            elif elem.tag == 'linear':
+                for message in elem:
+                    m = xml_to_type(message, self._api)
+                    if m.href not in messages:
+                        messages[m.href] = m
+                    if m.parent and m.parent.href in messages:
+                        m.parent = messages[m.parent.href]
+            elif elem.tag == 'read':
+                self.read_count = elem.text
+        self.messages = messages.values()
 
 
 class EventSubscriptionManager(LithiumType):
