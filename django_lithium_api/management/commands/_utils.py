@@ -12,7 +12,7 @@ class LithiumBaseCommand(BaseCommand):
     option_list = BaseCommand.option_list + (
         make_option('--user', dest='user', type='string', default='',
             help='The user to use for the connection'),
-        make_option('--password', dest='password', type='string', default='',
+        make_option('--password', dest='password', type='string', default=None,
             help='The password to use for the connection'),
         make_option('--debug', dest='debug', action='store_true', default=False),
     )
@@ -30,7 +30,7 @@ class LithiumBaseCommand(BaseCommand):
 def authenticated(func):
     @wraps(func)
     def auth_wrapper(self, *args, **options):
-        if not (options['user'] and options['password']):
+        if not options['user']:
             raise CommandError('Please provide a username and password')
         self.api.authenticate(options['user'], options['password'])
         try:

@@ -47,7 +47,12 @@ class LithiumApi(object):
         self.session = requests.session(auth=auth, config={})
         self.set_debug(lithium_settings.get('DEBUG') if debug is None else debug)
 
-    def authenticate(self, username, password):
+    def authenticate(self, username, password=None):
+        if password is None:
+            try:
+                password = lithium_settings.get('USERS')[username]
+            except KeyError:
+                raise exceptions.AuthenticationError('No password set in LITHIUM_API_USERS for "%s".' % username)
         self.session_key = self('auth_login', {'user.login': username, 'user.password': password})
 
     def logout(self):
@@ -85,21 +90,25 @@ class LithiumApi(object):
             handler = self.session.get
             request_kwargs = {'params': data}
         response = handler(url, **request_kwargs)
-        return self.handle_response(response.content)
+        return self.handle_response(response)
 
     def handle_response(self, response):
         if self._debug:
-            sys.stderr.write(response)
+            sys.stderr.write(response.content)
         if response:
-            tree = etree.fromstring(response)
+            tree = etree.fromstring(response.content)
             if tree.get('status') == 'success':
                 elem = tree.getchildren()
                 if not elem:
                     return None
                 elem = elem[0]
                 return types.xml_to_type(elem, self)
+            elif tree.get('status') == 'error':
+                error = tree.find('error')
+                message = error.findtext('message')
+                raise exceptions.RemoteException(message, error.get('code'), response.content)
             else:
-                raise exceptions.RemoteException(response)
+                raise exceptions.UnknownResponseType(response.content)
 
     def set_debug(self, debug):
         """

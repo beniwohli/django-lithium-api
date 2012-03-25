@@ -4,6 +4,7 @@ DEFAULT_SETTINGS = {
     'ENTRY_POINT': 'https://lithosphere.lithium.com/lithium/restapi/vc/',
     'HTTP_USER': None,
     'HTTP_PASSWORD': None,
+    'USERS': {},
 
     'DEBUG': False,
 }
