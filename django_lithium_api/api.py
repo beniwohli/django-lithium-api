@@ -11,7 +11,7 @@ from django_lithium_api import exceptions, types
 
 # supported API methods
 
-API_PATHS = {
+API_METHODS = {
     'GET': {
         'auth_user_id': 'authentication/sessions/current/id',
         'auth_user': 'authentication/sessions/current/user',
@@ -38,6 +38,7 @@ API_PATHS = {
 
 class LithiumApi(object):
     def __init__(self, entry_point=None, debug=None):
+        self._api_call_count = 0
         self.entry_point = entry_point or lithium_settings.get('ENTRY_POINT')
         self.session_key = ''
         if lithium_settings.get('HTTP_USER'):
@@ -60,15 +61,28 @@ class LithiumApi(object):
             self('auth_logout')
             self.session_key = None
 
-    def __call__(self, method, data=None, **kwargs):
+    def __call__(self, method, full_detail=False, data=None, **kwargs):
+        """
+        Main entry point to the API
+
+        :param method: API method as defined in `API_METHODS`
+        :param full_detail: instruct the REST API to return full XML representations
+        :param data: POST/GET data to send with the API call
+        :param kwargs: arguments to the API call, e.g. event type for ``events_subscribe``
+        :return: ``None``, ``list``, :class:`types.LithiumType`
+        :raise: :class:`exceptions.LithiumException` and subclasses.
+        """
+
         if data is None:
             data = {}
-        if method in API_PATHS['GET']:
+        if full_detail:
+            data['restapi.format_detail'] = 'full_list_element'
+        if method in API_METHODS['GET']:
             http_method = 'get'
-            path = API_PATHS['GET'][method]
-        elif method in API_PATHS['POST']:
+            path = API_METHODS['GET'][method]
+        elif method in API_METHODS['POST']:
             http_method = 'post'
-            path = API_PATHS['POST'][method]
+            path = API_METHODS['POST'][method]
         else:
             raise exceptions.MethodNotSupported(method)
         try:
@@ -89,6 +103,7 @@ class LithiumApi(object):
         else:
             handler = self.session.get
             request_kwargs = {'params': data}
+        self._api_call_count += 1
         response = handler(url, **request_kwargs)
         return self.handle_response(response)
 

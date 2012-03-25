@@ -25,5 +25,5 @@ Style:\t%s
         else:
             boards = [board_id]
         for board in boards:
-            for message in self.api('messages_linear', board_id=board):
+            for message in self.api('messages_linear', full_detail=True,  board_id=board):
                 api_signals.message_create.send(self, message=message, token=None, raw_xml=etree.tostring(message._tree))
