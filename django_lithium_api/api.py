@@ -37,6 +37,13 @@ API_METHODS = {
 
 
 class LithiumApi(object):
+    """
+    Initialize the API
+
+    :param entry_point: entry point for the REST API of the form `https://lithosphere.lithium.com/lithium/restapi/vc/`
+    :param debug: debug mode.
+    """
+
     def __init__(self, entry_point=None, debug=None):
         self._api_call_count = 0
         self.entry_point = entry_point or lithium_settings.get('ENTRY_POINT')
@@ -49,6 +56,17 @@ class LithiumApi(object):
         self.set_debug(lithium_settings.get('DEBUG') if debug is None else debug)
 
     def authenticate(self, username, password=None):
+        """
+        Authenticate with the REST API.
+
+        After successfully authenticated, all following API calls automatically
+        send the session key.
+
+        :param username: the user name to be used for API calls
+        :param password: the password. This can also be set using the ``LITHIUM_API_USERS`` setting
+        :raise: :class:`~django_lithium_api.exceptions.AuthenticationError`, :class:`django_lithium_api.exceptions.RemoteException`
+        """
+
         if password is None:
             try:
                 password = lithium_settings.get('USERS')[username]
@@ -57,19 +75,26 @@ class LithiumApi(object):
         self.session_key = self('auth_login', {'user.login': username, 'user.password': password})
 
     def logout(self):
+        """
+        Logs out the user and unsets the session key.
+        """
+
         if self.session_key:
             self('auth_logout')
             self.session_key = None
 
-    def __call__(self, method, full_detail=False, data=None, **kwargs):
+    def call(self, method, full_detail=False, data=None, **kwargs):
         """
-        Main entry point to the API
+        Main entry point to the API.
 
-        :param method: API method as defined in `API_METHODS`
+        :meth:`__call__` is aliased to this method for convenience, so you can
+        use the API like this: ``api('boards')``
+
+        :param method: API method as defined in ``API_METHODS``
         :param full_detail: instruct the REST API to return full XML representations
         :param data: POST/GET data to send with the API call
         :param kwargs: arguments to the API call, e.g. event type for ``events_subscribe``
-        :return: ``None``, ``list``, :class:`types.LithiumType`
+        :return: :class:`None`, :class:`list`, :class:`types.LithiumType`
         :raise: :class:`exceptions.LithiumException` and subclasses.
         """
 
@@ -91,7 +116,18 @@ class LithiumApi(object):
             raise exceptions.ArgumentsMissing(e.message)
         return self.raw(path, http_method, **data)
 
+    __call__ = call
+
     def raw(self, path, http_method='get', **data):
+        """
+        Raw access to the REST API.
+
+        :param path: path to the REST API call
+        :param http_method: ``"get"`` or ``"post"``
+        :param data: GET/POST data
+        :return: :class:`None`, :class:`list`, :class:`types.LithiumType`
+        """
+
         if path[0] == '/':
             path = path[1:]
         url = self.entry_point + path
@@ -108,6 +144,15 @@ class LithiumApi(object):
         return self.handle_response(response)
 
     def handle_response(self, response):
+        """
+        Handles the response from the REST API and converts it to lithium types
+        and primitive types.
+
+        :param response: a :class:`requests.Response` instance.
+        :return: :class:`None`, :class:`list`, :class:`types.LithiumType`
+        :raise: :class:`~django_lithium_api.exceptions.LithiumException`
+        """
+
         if self._debug:
             sys.stderr.write(response.content)
         if response:
@@ -128,8 +173,11 @@ class LithiumApi(object):
     def set_debug(self, debug):
         """
         Changes the ``debug`` mode of the API. When set to ``True``, HTTP
-        requests and XML responses are printed to STDERR
+        requests and XML responses are printed to ``sys.stderr``.
+
+        :param debug: ``True``/``False``
         """
+
         self._debug = debug
         if debug:
             self.session.config['verbose'] = sys.stderr
