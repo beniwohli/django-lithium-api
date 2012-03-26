@@ -10,18 +10,24 @@ from django.utils.datastructures import SortedDict
 
 
 class LithiumType(object):
-    def __init__(self, xml_tree, api):
+    def __init__(self, xml_tree=None, api=None):
         self.id = xml_tree.get('id')
         self.href = xml_tree.get('href')
         self._tree = xml_tree
         self._populated = False
         self._api = api
 
-        for child in xml_tree:
-            if hasattr(self, '_handle_%s' % child.tag):
-                getattr(self, '_handle_%s' % child.tag)(child)
-            else:
-                setattr(self, child.tag, xml_to_type(child, api))
+        if xml_tree is not None:
+            for child in xml_tree:
+                attr = child.tag
+                if hasattr(self, '_handle_%s' % attr):
+                    getattr(self, '_handle_%s' % attr)(child)
+                else:
+                    value = xml_to_type(child, api)
+                    if hasattr(self, '_postprocess_%s' % attr):
+                        value = getattr(self, '_postprocess_%s' % attr)(value)
+                    setattr(self, attr, value)
+
 
     def __getattr__(self, item):
         if item.startswith('_'):
@@ -56,7 +62,11 @@ class User(LithiumType):
 
 
 class Message(LithiumType):
-    pass
+    def _postprocess_views(self, value):
+        return value[0]
+
+    def _postprocess_kudos(self, value):
+        return value[0]
 
 
 class MessageStatus(LithiumType):
