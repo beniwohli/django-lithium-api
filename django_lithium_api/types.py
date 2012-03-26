@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 import pprint
 
-from collections import defaultdict, OrderedDict
+from collections import defaultdict
 
 from dateutil.parser import  parse as parse_datetime
 from lxml import etree
+
+from django.utils.datastructures import SortedDict
 
 
 class LithiumType(object):
@@ -34,7 +36,7 @@ class LithiumType(object):
             raise AttributeError(item)
 
     def __repr__(self):
-        return '<%s>: %s' % (self.__class__.__name__, pprint.pformat({k:v for k, v in self.__dict__.iteritems() if not k.startswith('_')}))
+        return '<%s>: %s' % (self.__class__.__name__, pprint.pformat(dict((k,v) for k, v in self.__dict__.iteritems() if not k.startswith('_'))))
 
 
 class Board(LithiumType):
@@ -84,7 +86,7 @@ class Thread(LithiumType):
             </messages>
         """
 
-        messages = OrderedDict()
+        messages = SortedDict()
         for elem in child:
             if elem.tag == 'topic':
                 self.topic = xml_to_type(elem, self._api)
