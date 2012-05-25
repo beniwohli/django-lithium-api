@@ -23,7 +23,10 @@ setup(
     include_package_data = True,
     install_requires=[
         'Django>=1.3',
-        ],
+        'requests',
+        'python-dateutil==1.5',
+        'lxml',
+    ],
     classifiers = [
         "Development Status :: 3 - Alpha",
         "Framework :: Django",

@@ -72,6 +72,15 @@ class Message(LithiumType):
 class MessageStatus(LithiumType):
     pass
 
+class NodeMessageContext(LithiumType):
+    def __init__(self, *args, **kwargs):
+        self.messages = []
+        super(NodeMessageContext, self).__init__(*args, **kwargs)
+
+    def _handle_message(self, child):
+        print len(self.messages)
+        self.messages.append(xml_to_type(child, self._api))
+
 
 class Label(LithiumType):
     pass
@@ -182,6 +191,7 @@ types_map = {
     'thread': Thread,
     'message': Message,
     'message_status': MessageStatus,
+    'node_message_context': NodeMessageContext,
     'label': Label,
 
     'event_subscription_manager': EventSubscriptionManager,

@@ -55,7 +55,7 @@ class LithiumApi(object):
         self.session = requests.session(auth=auth, config={})
         self.set_debug(lithium_settings.get('DEBUG') if debug is None else debug)
 
-    def authenticate(self, username, password=None):
+    def authenticate(self, username, password=None, force_reauth=False):
         """
         Authenticate with the REST API.
 
@@ -64,15 +64,17 @@ class LithiumApi(object):
 
         :param username: the user name to be used for API calls
         :param password: the password. This can also be set using the ``LITHIUM_API_USERS`` setting
+        :param force_reauth: if ``True``, a new authentication token is fetched even if one is available already
         :raise: :class:`~django_lithium_api.exceptions.AuthenticationError`, :class:`django_lithium_api.exceptions.RemoteException`
         """
-
+        if self.session_key and not force_reauth:
+            return
         if password is None:
             try:
                 password = lithium_settings.get('USERS')[username]
             except KeyError:
                 raise exceptions.AuthenticationError('No password set in LITHIUM_API_USERS for "%s".' % username)
-        self.session_key = self('auth_login', {'user.login': username, 'user.password': password})
+        self.session_key = self.call('auth_login', data={'user.login': username, 'user.password': password})
 
     def logout(self):
         """
@@ -80,7 +82,7 @@ class LithiumApi(object):
         """
 
         if self.session_key:
-            self('auth_logout')
+            self.call('auth_logout')
             self.session_key = None
 
     def call(self, method, full_detail=False, data=None, **kwargs):
