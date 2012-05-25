@@ -78,7 +78,6 @@ class NodeMessageContext(LithiumType):
         super(NodeMessageContext, self).__init__(*args, **kwargs)
 
     def _handle_message(self, child):
-        print len(self.messages)
         self.messages.append(xml_to_type(child, self._api))
 
 
