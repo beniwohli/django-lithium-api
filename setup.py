@@ -23,7 +23,7 @@ setup(
     include_package_data = True,
     install_requires=[
         'Django>=1.3',
-        'requests',
+        'requests>=1.0.4',
         'python-dateutil==1.5',
         'lxml',
     ],

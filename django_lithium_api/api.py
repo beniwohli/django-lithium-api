@@ -3,6 +3,7 @@
 import sys
 
 import requests
+import logging
 
 from lxml import etree
 from django_lithium_api import settings as lithium_settings
@@ -52,7 +53,8 @@ class LithiumApi(object):
             auth = (lithium_settings.get('HTTP_USER'), lithium_settings.get('HTTP_PASSWORD'))
         else:
             auth = ()
-        self.session = requests.session(auth=auth, config={})
+        self.session = requests.Session()
+        self.session.auth = auth
         self.set_debug(lithium_settings.get('DEBUG') if debug is None else debug)
 
     def authenticate(self, username, password=None, force_reauth=False):
@@ -182,8 +184,7 @@ class LithiumApi(object):
 
         self._debug = debug
         if debug:
-            self.session.config['verbose'] = sys.stderr
-        else:
-            self.session.config['verbose'] = None
+            logging.basicConfig()
+            logging.getLogger().setLevel(logging.DEBUG)
 
 api = LithiumApi()
