@@ -52,7 +52,8 @@ class LithiumApi(object):
             auth = (lithium_settings.get('HTTP_USER'), lithium_settings.get('HTTP_PASSWORD'))
         else:
             auth = ()
-        self.session = requests.session(auth=auth, config={})
+        self.session = requests.Session()
+        self.session.auth = auth
         self.set_debug(lithium_settings.get('DEBUG') if debug is None else debug)
 
     def authenticate(self, username, password=None, force_reauth=False):
@@ -182,8 +183,14 @@ class LithiumApi(object):
 
         self._debug = debug
         if debug:
-            self.session.config['verbose'] = sys.stderr
-        else:
-            self.session.config['verbose'] = None
+            import httplib
+            import logging
+            httplib.HTTPConnection.debuglevel = 1
+
+            logging.getLogger().setLevel(logging.DEBUG)
+            requests_log = logging.getLogger("requests.packages.urllib3")
+            requests_log.setLevel(logging.DEBUG)
+            requests_log.propagate = True
+
 
 api = LithiumApi()
